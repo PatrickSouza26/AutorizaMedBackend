@@ -28,6 +28,9 @@ public class RedeCredenciada {
     @JoinColumn(name = "procedimento_id", nullable = false)
     private Procedimento procedimento;
 
+    @Column(nullable = false)
+    private boolean ativo;
+
     @ElementCollection(targetClass = TipoPlano.class, fetch = FetchType.LAZY)
     @CollectionTable(
             name = "tb_rede_credenciada_planos",

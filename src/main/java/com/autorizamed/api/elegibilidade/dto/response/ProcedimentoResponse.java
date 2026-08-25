@@ -9,5 +9,6 @@ public record ProcedimentoResponse(
         String codigoTuss,
         String descricao,
         CategoriaProcedimento categoria,
-        boolean requerAutorizacao
+        boolean requerAutorizacao,
+        boolean ativo
 ) {}

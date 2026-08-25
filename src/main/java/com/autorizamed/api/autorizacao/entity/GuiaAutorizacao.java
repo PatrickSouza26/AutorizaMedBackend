@@ -74,11 +74,14 @@ public class GuiaAutorizacao implements Auditavel {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataSolicitacao;
 
+    @Column(length = 255)
+    private String motivoNegativa;
+
     @PrePersist
     protected void onCreate() {
         this.dataSolicitacao = LocalDateTime.now();
         if (this.status == null) {
-            this.status = StatusGuia.AGUARDANDO_ANALISE;
+            this.status = StatusGuia.EM_ANALISE;
         }
     }
 

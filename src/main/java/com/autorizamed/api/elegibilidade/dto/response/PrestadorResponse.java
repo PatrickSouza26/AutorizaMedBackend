@@ -7,5 +7,6 @@ public record PrestadorResponse(
         String nome,
         String documento,
         String endereco,
-        String telefone
+        String telefone,
+        boolean ativo
       ) {}

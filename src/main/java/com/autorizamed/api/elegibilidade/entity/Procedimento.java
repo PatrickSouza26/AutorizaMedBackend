@@ -31,4 +31,7 @@ public class Procedimento {
     @Column(nullable = false)
     private boolean requerAutorizacao;
 
+    @Column(nullable = false)
+    private boolean ativo;
+
 }

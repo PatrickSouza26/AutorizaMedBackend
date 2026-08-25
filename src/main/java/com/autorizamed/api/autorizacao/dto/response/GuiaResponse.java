@@ -12,5 +12,7 @@ public record GuiaResponse(
         String nomePrestador,
         List<String> examesSolicitados, //nomes/códigos dos exames
         StatusGuia statusAtual,
+        String motivoNegativa,
         LocalDateTime dataSolicitacao
+
 ) {}

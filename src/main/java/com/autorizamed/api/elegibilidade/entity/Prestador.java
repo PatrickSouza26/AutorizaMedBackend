@@ -29,4 +29,7 @@ public class Prestador {
 
     @Column(length = 20)
     private String telefone;
+
+    @Column(nullable = false)
+    private boolean ativo;
 }
