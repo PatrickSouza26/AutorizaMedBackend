@@ -27,6 +27,9 @@ public class GuiaAutorizacao implements Auditavel {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(nullable = false, unique = true)
+    private String numeroGuia;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "beneficiario_id", nullable = false)
     private Beneficiario beneficiario;
@@ -59,6 +62,9 @@ public class GuiaAutorizacao implements Auditavel {
     private CaraterSolicitacao caraterSolicitacao;
 
     @Column(nullable = false)
+    private LocalDateTime dataLimiteAprovacao;
+
+    @Column(nullable = false)
     private boolean atendimentoRn;
 
     @Column(nullable = false)
@@ -76,6 +82,13 @@ public class GuiaAutorizacao implements Auditavel {
 
     @Column(length = 255)
     private String motivoNegativa;
+
+    @Column(length = 255)
+    private String alertaSistema;
+
+    @Column(length = 255)
+    private String parecerAuditoria;
+
 
     @PrePersist
     protected void onCreate() {

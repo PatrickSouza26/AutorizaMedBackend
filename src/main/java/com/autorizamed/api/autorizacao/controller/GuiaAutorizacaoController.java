@@ -36,9 +36,16 @@ public class GuiaAutorizacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @PatchMapping("/{id}/responder-pendencia")
+    public ResponseEntity<GuiaResponse> responderPendencia(@PathVariable("id") UUID id) {
+        GuiaResponse response = service.responderPendencia(id);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/paciente/{carteirinha}")
     public ResponseEntity<List<GuiaResponse>> listarPorPaciente(@PathVariable String carteirinha) {
         List<GuiaResponse> response = service.listarPorCarteirinha(carteirinha);
         return ResponseEntity.ok(response);
     }
+
 }
