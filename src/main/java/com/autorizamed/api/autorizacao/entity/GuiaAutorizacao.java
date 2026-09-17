@@ -1,19 +1,20 @@
 package com.autorizamed.api.autorizacao.entity;
 
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
-import com.autorizamed.api.autorizacao.enums.SiglaConselho;
 import com.autorizamed.api.autorizacao.enums.StatusGuia;
+import com.autorizamed.api.autorizacao.enums.TipoSolicitacao;
 import com.autorizamed.api.elegibilidade.entity.Beneficiario;
+import com.autorizamed.api.elegibilidade.entity.Funcionario;
 import com.autorizamed.api.elegibilidade.entity.Prestador;
-import com.autorizamed.api.elegibilidade.entity.Procedimento;
+import com.autorizamed.api.seguranca.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
-import com.autorizamed.api.auditoria.model.Auditavel;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 @Entity
 @Table(name = "tb_guia_autorizacao")
 @Getter
@@ -21,7 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GuiaAutorizacao implements Auditavel {
+public class GuiaAutorizacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,24 +39,34 @@ public class GuiaAutorizacao implements Auditavel {
     @JoinColumn(name = "prestador_id", nullable = false)
     private Prestador prestador;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "tb_guia_procedimento",
-            joinColumns = @JoinColumn(name = "guia_id"),
-            inverseJoinColumns = @JoinColumn(name = "procedimento_id")
-    )
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funcionario_id")
+    private Funcionario funcionario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profissional_solicitante_id", nullable = false)
+    private ProfissionalSaude profissionalSolicitante;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profissional_executante_id")
+    private ProfissionalSaude profissionalExecutante;
+
+    @OneToMany(mappedBy = "guia", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Procedimento> procedimentos = new ArrayList<>();
+    private List<ProcedimentoGuia> procedimentos = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SiglaConselho siglaConselho;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "auditor_id")
+    private Usuario auditor;
 
-    @Column(nullable = false, length = 2)
-    private String ufConselho;
+    @OneToMany(mappedBy = "guia", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("dataMovimentacao DESC")
+    @Builder.Default
+    private List<HistoricoGuia> historicos = new ArrayList<>();
 
-    @Column(nullable = false, length = 20)
-    private String cbosProfissional;
+    @OneToMany(mappedBy = "guia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<AnexoGuia> anexos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -69,9 +80,13 @@ public class GuiaAutorizacao implements Auditavel {
 
     @Column(nullable = false)
     private boolean declaracaoAcidente;
-    
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String indicacaoClinica;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_solicitacao", nullable = false)
+    private TipoSolicitacao tipoSolicitacao;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -89,22 +104,54 @@ public class GuiaAutorizacao implements Auditavel {
     @Column(length = 255)
     private String parecerAuditoria;
 
-
     @PrePersist
     protected void onCreate() {
-        this.dataSolicitacao = LocalDateTime.now();
+        if (this.dataSolicitacao == null) {
+            this.dataSolicitacao = LocalDateTime.now();
+        }
         if (this.status == null) {
             this.status = StatusGuia.EM_ANALISE;
         }
     }
 
-    @Override
-    public UUID getId() {
-        return this.id;
+    
+    public void adicionarProcedimento(ProcedimentoGuia item) {
+        procedimentos.add(item);
+        item.setGuia(this);
     }
 
-    @Override
-    public String getNomeEntidade() {
-        return "GuiaAutorizacao - " + this.id;
+    public void adicionarHistorico(HistoricoGuia historico) {
+        historicos.add(historico);
+        historico.setGuia(this);
+    }
+
+    public void registrarHistorico(Usuario usuario, StatusGuia novoStatus, String parecer, String motivoNegativa) {
+        StatusGuia statusAnterior = this.status != null ? this.status : novoStatus;
+
+        HistoricoGuia historico = HistoricoGuia.builder()
+                .usuario(usuario)
+                .statusAnterior(statusAnterior)
+                .statusNovo(novoStatus)
+                .parecer(parecer)
+                .motivoNegativa(motivoNegativa)
+                .build();
+
+        this.adicionarHistorico(historico);
+        this.status = novoStatus;
+
+        if (motivoNegativa != null) {
+            this.motivoNegativa = motivoNegativa;
+        }
+    }
+
+    public LocalDateTime getDataUltimaMovimentacao() {
+        if (this.historicos == null || this.historicos.isEmpty()) {
+            return this.dataSolicitacao;
+        }
+
+        return this.historicos.stream()
+                .map(HistoricoGuia::getDataMovimentacao)
+                .max(LocalDateTime::compareTo)
+                .orElse(this.dataSolicitacao);
     }
 }

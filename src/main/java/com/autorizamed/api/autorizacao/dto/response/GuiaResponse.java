@@ -1,7 +1,9 @@
 package com.autorizamed.api.autorizacao.dto.response;
 
+import com.autorizamed.api.auditoria.model.Auditavel;
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
 import com.autorizamed.api.autorizacao.enums.StatusGuia;
+import com.autorizamed.api.autorizacao.enums.TipoSolicitacao;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,11 +16,31 @@ public record GuiaResponse(
         String nomePaciente,
         String docPrestador,
         String nomePrestador,
-        List<String> examesSolicitados, //nomes/códigos dos exames
+        String nomeFuncionarioOperador,
+        String nomeProfissionalSolicitante,
+        String conselhoProfissionalSolicitante,
+        String nomeProfissionalExecutante,
+        String conselhoProfissionalExecutante,
+        List<String> examesSolicitados,
         StatusGuia statusAtual,
         String motivoNegativa,
         String indicacaoClinica,
         LocalDateTime dataSolicitacao,
         CaraterSolicitacao caraterSolicitacao,
-        LocalDateTime dataLimiteAprovacao
-) {}
+        LocalDateTime dataLimiteAprovacao,
+        String nomeAuditorResponsavel,
+        TipoSolicitacao tipoSolicitacao,
+        List<HistoricoGuiaResponse> historico,
+        List<AnexoResponse> anexos
+) implements Auditavel {
+
+    @Override
+    public UUID getId() {
+        return idGuia();
+    }
+
+    @Override
+    public String getNomeEntidade() {
+        return "Guia nº " + numeroGuia();
+    }
+}

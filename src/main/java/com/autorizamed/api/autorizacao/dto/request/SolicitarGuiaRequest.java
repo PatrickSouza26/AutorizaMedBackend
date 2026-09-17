@@ -1,33 +1,33 @@
 package com.autorizamed.api.autorizacao.dto.request;
 
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
-import com.autorizamed.api.autorizacao.enums.SiglaConselho;
+import com.autorizamed.api.autorizacao.enums.TipoSolicitacao;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.UUID;
 
 public record SolicitarGuiaRequest(
         @NotBlank(message = "A carteirinha é obrigatória.")
         String carteirinhaBeneficiario,
 
-        @NotBlank(message = "O documento do prestador é obrigatório.")
-        String documentoPrestador,
+        @NotNull(message = "O prestador é obrigatório.")
+        UUID prestadorId,
+
+        UUID funcionarioId,
+
+        @NotNull(message = "O profissional solicitante é obrigatório.")
+        ProfissionalSaudeRequest profissionalSolicitante,
+
+        ProfissionalSaudeRequest profissionalExecutante,
 
         @NotEmpty(message = "Pelo menos um procedimento deve ser solicitado.")
-        List<String> codigosTuss,
-
-        @NotNull(message = "A sigla do conselho é obrigatória.")
-        SiglaConselho siglaConselho,
-
-        @NotBlank(message = "A UF do conselho é obrigatória.")
-        @Size(min = 2, max = 2, message = "A UF deve conter exatamente 2 letras.")
-        String ufConselho,
-
-        @NotBlank(message = "O CBOS do profissional é obrigatório.")
-        String cbosProfissional,
+        @Valid
+        List<ItemProcedimentoRequest> procedimentos,
 
         @NotNull(message = "O caráter da solicitação é obrigatório.")
         CaraterSolicitacao caraterSolicitacao,
@@ -39,5 +39,17 @@ public record SolicitarGuiaRequest(
         Boolean declaracaoAcidente,
 
         @NotBlank(message = "A indicação clínica é obrigatória para a análise.")
-        String indicacaoClinica
-) {}
+        String indicacaoClinica,
+
+        @NotNull(message = "O tipo de solicitação é obrigatório (ex: CONSULTA, EXAME).")
+        TipoSolicitacao tipoSolicitacao
+) {
+        public record ItemProcedimentoRequest(
+                @NotBlank(message = "O código TUSS é obrigatório.")
+                String codigoTuss,
+
+                @NotNull(message = "A quantidade é obrigatória.")
+                @Min(value = 1, message = "A quantidade mínima é 1.")
+                Integer quantidade
+        ) {}
+}
