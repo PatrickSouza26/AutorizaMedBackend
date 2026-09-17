@@ -1,5 +1,6 @@
 package com.autorizamed.api.elegibilidade.dto.response;
 
+import com.autorizamed.api.auditoria.model.Auditavel;
 import com.autorizamed.api.elegibilidade.enums.TipoPlano;
 
 import java.util.List;
@@ -11,5 +12,17 @@ public record RedeCredenciadaResponse(
         String documentoPrestador,
         String codigoTuss,
         String descricaoProcedimento,
-        List<TipoPlano> planosAceitos
-) {}
+        List<TipoPlano> planosAceitos,
+        boolean ativo
+) implements Auditavel {
+
+    @Override
+    public UUID getId() {
+        return id();
+    }
+
+    @Override
+    public String getNomeEntidade() {
+        return "Vínculo: " + nomePrestador() + " -> " + codigoTuss();
+    }
+}

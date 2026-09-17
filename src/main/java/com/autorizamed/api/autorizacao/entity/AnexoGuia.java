@@ -22,11 +22,10 @@ public class AnexoGuia {
     private String nomeArquivo;
 
     @Column(nullable = false)
-    private String tipoArquivo; // Ex: application/pdf, image/jpeg
+    private String tipoArquivo;
 
-    @Lob // ARQUIVO PESADO (BLOB)
-    @Column(nullable = false)
-    private byte[] dados;
+    @OneToOne(mappedBy = "anexo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private AnexoConteudo conteudo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guia_id", nullable = false)

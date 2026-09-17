@@ -1,35 +1,27 @@
 package com.autorizamed.api.elegibilidade.entity;
 
+import com.autorizamed.api.seguranca.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
 
 @Entity
 @Table(name = "tb_prestador")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Prestador {
+@SuperBuilder
+public class Prestador extends Usuario {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(nullable = false, length = 150)
-    private String nome;
-
-    // CRM OU CNPJ
     @Column(nullable = false, unique = true, length = 20)
     private String documento;
 
-    @Column(nullable = false, length = 200)
-    private String endereco;
-
-    @Column(length = 20)
-    private String telefone;
+    @Column(nullable = false, unique = true, length = 30)
+    private String numeroPrestador;
 
     @Column(nullable = false)
     private boolean ativo;
+
 }
