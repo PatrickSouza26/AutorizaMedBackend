@@ -1,11 +1,15 @@
 package com.autorizamed.api.elegibilidade.service;
 
+import com.autorizamed.api.auditoria.annotation.AuditCreate;
+import com.autorizamed.api.auditoria.annotation.AuditUpdate;
+import com.autorizamed.api.auditoria.enums.AcaoAuditoria;
 import com.autorizamed.api.elegibilidade.dto.request.AtualizarRedeCredenciadaRequest;
 import com.autorizamed.api.elegibilidade.dto.request.RedeCredenciadaRequest;
 import com.autorizamed.api.elegibilidade.dto.response.RedeCredenciadaResponse;
 import com.autorizamed.api.elegibilidade.entity.Prestador;
 import com.autorizamed.api.elegibilidade.entity.Procedimento;
 import com.autorizamed.api.elegibilidade.entity.RedeCredenciada;
+import com.autorizamed.api.elegibilidade.mapper.RedeCredenciadaMapper;
 import com.autorizamed.api.elegibilidade.repository.PrestadorRepository;
 import com.autorizamed.api.elegibilidade.repository.ProcedimentoRepository;
 import com.autorizamed.api.elegibilidade.repository.RedeCredenciadaRepository;
@@ -27,6 +31,7 @@ public class RedeCredenciadaService {
     private final ProcedimentoRepository procedimentoRepository;
 
     @Transactional
+    @AuditCreate(entidadeTipo = RedeCredenciada.class)
     public RedeCredenciadaResponse vincular(RedeCredenciadaRequest request) {
         Prestador prestador = prestadorRepository.findById(request.prestadorId())
                 .orElseThrow(() -> new EntityNotFoundException("Prestador não encontrado."));
@@ -42,11 +47,11 @@ public class RedeCredenciadaService {
                 .prestador(prestador)
                 .procedimento(procedimento)
                 .planosAceitos(request.planosAceitos())
-                .ativo(true) // Regra: O contrato nasce ativo
+                .ativo(true)
                 .build();
 
         rede = redeRepository.save(rede);
-        return converterParaResponse(rede);
+        return RedeCredenciadaMapper.converteEntidade(rede);
     }
 
     @Transactional(readOnly = true)
@@ -58,11 +63,12 @@ public class RedeCredenciadaService {
         List<RedeCredenciada> lista = redeRepository.findByPrestadorId(prestadorId);
 
         return lista.stream()
-                .map(this::converterParaResponse)
+                .map(RedeCredenciadaMapper::converteEntidade) // Method reference limpo
                 .collect(Collectors.toList());
     }
 
     @Transactional
+    @AuditUpdate(entidadeTipo = RedeCredenciada.class)
     public RedeCredenciadaResponse atualizarPlanos(UUID id, AtualizarRedeCredenciadaRequest request) {
         RedeCredenciada rede = redeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Vínculo de Rede Credenciada não encontrado."));
@@ -72,11 +78,12 @@ public class RedeCredenciadaService {
             rede = redeRepository.save(rede);
         }
 
-        return converterParaResponse(rede);
+        return RedeCredenciadaMapper.converteEntidade(rede);
     }
 
     @Transactional
-    public void inativar(UUID id) {
+    @AuditUpdate(entidadeTipo = RedeCredenciada.class, acao = AcaoAuditoria.INATIVACAO)
+    public RedeCredenciadaResponse inativar(UUID id) {
         RedeCredenciada rede = redeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Vínculo de Rede Credenciada não encontrado."));
 
@@ -85,18 +92,22 @@ public class RedeCredenciadaService {
         }
 
         rede.setAtivo(false);
-        redeRepository.save(rede);
+        RedeCredenciada redeSalva = redeRepository.save(rede);
+        return RedeCredenciadaMapper.converteEntidade(redeSalva);
     }
 
-    private RedeCredenciadaResponse converterParaResponse(RedeCredenciada entidade) {
-        // Atualize seu RedeCredenciadaResponse para incluir o campo ativo, se desejar
-        return new RedeCredenciadaResponse(
-                entidade.getId(),
-                entidade.getPrestador().getNome(),
-                entidade.getPrestador().getDocumento(),
-                entidade.getProcedimento().getCodigoTuss(),
-                entidade.getProcedimento().getDescricao(),
-                entidade.getPlanosAceitos()
-        );
+    @Transactional
+    @AuditUpdate(entidadeTipo = RedeCredenciada.class, acao = AcaoAuditoria.REATIVACAO)
+    public RedeCredenciadaResponse reativar(UUID id) {
+        RedeCredenciada rede = redeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Vínculo de Rede Credenciada não encontrado."));
+
+        if (rede.isAtivo()) {
+            throw new IllegalArgumentException("Este vínculo já está ativo.");
+        }
+
+        rede.setAtivo(true);
+        RedeCredenciada redeSalva = redeRepository.save(rede);
+        return RedeCredenciadaMapper.converteEntidade(redeSalva);
     }
 }

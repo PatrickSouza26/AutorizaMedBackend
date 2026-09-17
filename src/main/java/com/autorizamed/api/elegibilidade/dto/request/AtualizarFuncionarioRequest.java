@@ -2,8 +2,9 @@ package com.autorizamed.api.elegibilidade.dto.request;
 
 import com.autorizamed.api.comum.dto.EnderecoDTO;
 
-public record AtualizarPrestadorRequest(
+public record AtualizarFuncionarioRequest(
         String nome,
-        EnderecoDTO endereco,
-        String telefone
+        String email,
+        String telefone,
+        EnderecoDTO endereco
 ) {}

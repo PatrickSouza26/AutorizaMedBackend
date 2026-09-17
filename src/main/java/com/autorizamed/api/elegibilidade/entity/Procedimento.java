@@ -21,7 +21,7 @@ public class Procedimento {
     @Column(nullable = false, unique = true, length = 10)
     private String codigoTuss;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 500)
     private String descricao;
 
     @Enumerated(EnumType.STRING)
