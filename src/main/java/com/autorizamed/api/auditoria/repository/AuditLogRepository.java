@@ -17,14 +17,16 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     @Query("SELECT a FROM AuditLog a WHERE " +
             "(:acao IS NULL OR a.acao = :acao) AND " +
             "(:tipoEntidade IS NULL OR a.entidadeTipo = :tipoEntidade) AND " +
-            "(:pesquisa IS NULL OR " +
-            "  LOWER(a.usuarioNome) LIKE LOWER(CONCAT('%', :pesquisa, '%')) OR " +
-            "  LOWER(a.entidadeNome) LIKE LOWER(CONCAT('%', :pesquisa, '%')) OR " +
-            "  LOWER(a.descricao) LIKE LOWER(CONCAT('%', :pesquisa, '%')))")
+            "(:usuarioIds IS NULL OR a.usuarioId IN :usuarioIds) AND " +
+            "(CAST(:pesquisa AS string) IS NULL OR " +
+            "  LOWER(a.usuarioNome) LIKE LOWER(CONCAT('%', CAST(:pesquisa AS string), '%')) OR " +
+            "  LOWER(a.entidadeNome) LIKE LOWER(CONCAT('%', CAST(:pesquisa AS string), '%')) OR " +
+            "  LOWER(a.descricao) LIKE LOWER(CONCAT('%', CAST(:pesquisa AS string), '%')))")
     Page<AuditLog> buscarLogsComFiltros(
             @Param("pesquisa") String pesquisa,
             @Param("acao") String acao,
             @Param("tipoEntidade") String tipoEntidade,
+            @Param("usuarioIds") List<UUID> usuarioIds,
             Pageable pageable
     );
 

@@ -4,6 +4,8 @@ import com.autorizamed.api.auditoria.dto.AuditLogResponseDTO;
 import com.autorizamed.api.auditoria.entity.AuditLog;
 import com.autorizamed.api.auditoria.mapper.AuditLogMapper;
 import com.autorizamed.api.auditoria.repository.AuditLogRepository;
+import com.autorizamed.api.elegibilidade.entity.Funcionario;
+import com.autorizamed.api.elegibilidade.repository.FuncionarioRepository;
 import com.autorizamed.api.seguranca.entity.Usuario;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -16,15 +18,20 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuditService {
 
     private final AuditLogRepository repository;
+    private final FuncionarioRepository funcionarioRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -58,7 +65,22 @@ public class AuditService {
 
     @Transactional(readOnly = true)
     public Page<AuditLogResponseDTO> buscarLogs(String pesquisa, String acao, String tipoEntidade, Pageable pageable) {
-        return repository.buscarLogsComFiltros(pesquisa, acao, tipoEntidade, pageable)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        List<UUID> usuarioIds = null;
+        
+        if (auth != null && auth.getPrincipal() instanceof Usuario usuarioLogado) {
+            if (usuarioLogado.getRole().name().equals("PRESTADOR")) {
+                usuarioIds = new ArrayList<>();
+                usuarioIds.add(usuarioLogado.getId());
+
+                List<Funcionario> equipe = funcionarioRepository.findByPrestadorId(usuarioLogado.getId());
+                for (Funcionario f : equipe) {
+                    usuarioIds.add(f.getId());
+                }
+            }
+        }
+        
+        return repository.buscarLogsComFiltros(pesquisa, acao, tipoEntidade, usuarioIds, pageable)
                 .map(AuditLogMapper::converteEntidade);
     }
 
