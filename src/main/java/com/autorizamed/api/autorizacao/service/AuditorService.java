@@ -10,6 +10,7 @@ import com.autorizamed.api.autorizacao.dto.response.FilaKpiResponse;
 import com.autorizamed.api.autorizacao.dto.response.GuiaResponse;
 import com.autorizamed.api.autorizacao.entity.Auditor;
 import com.autorizamed.api.autorizacao.entity.GuiaAutorizacao;
+import com.autorizamed.api.autorizacao.entity.HistoricoGuia;
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
 import com.autorizamed.api.autorizacao.enums.StatusGuia;
 import com.autorizamed.api.autorizacao.event.GuiaStatusAlteradaEvent;
@@ -122,6 +123,43 @@ public class AuditorService {
     private Auditor buscarAuditorSemVerificarStatus(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Auditor não encontrado no sistema."));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<GuiaResponse> listarMinhasAnalises(UUID auditorId, Pageable pageable) {
+        return guiaRepository.buscarMinhasAnalisesOrdenadas(auditorId, StatusGuia.EM_AUDITORIA, pageable)
+                .map(GuiaMapper::converteEntidade);
+    }
+
+    @Transactional
+    public void devolverParaFila(UUID guiaId, UUID auditorId) {
+        GuiaAutorizacao guia = guiaRepository.findById(guiaId)
+                .orElseThrow(() -> new EntityNotFoundException("Guia não encontrada."));
+
+        if (!StatusGuia.EM_AUDITORIA.equals(guia.getStatus()) || guia.getAuditor() == null || !auditorId.equals(guia.getAuditor().getId())) {
+            throw new IllegalArgumentException("A guia não está em análise por este auditor.");
+        }
+
+        StatusGuia statusAnterior = StatusGuia.EM_ANALISE;
+
+        if (guia.getHistoricos() != null && !guia.getHistoricos().isEmpty()) {
+            HistoricoGuia ultimoHistorico = guia.getHistoricos().get(0);
+            
+            if (ultimoHistorico.getStatusNovo() == StatusGuia.EM_AUDITORIA) {
+                if (ultimoHistorico.getStatusAnterior() != null) {
+                    statusAnterior = ultimoHistorico.getStatusAnterior();
+                }
+                guia.getHistoricos().remove(ultimoHistorico);
+            }
+        }
+        
+        guia.setStatus(statusAnterior);
+        
+        if (statusAnterior != StatusGuia.PENDENCIA_RESPONDIDA) {
+            guia.setAuditor(null);
+        }
+        
+        guiaRepository.save(guia);
     }
 
     @Transactional(readOnly = true)

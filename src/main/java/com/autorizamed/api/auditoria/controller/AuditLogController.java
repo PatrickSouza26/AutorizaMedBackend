@@ -20,7 +20,7 @@ public class AuditLogController {
     private final AuditService auditService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PRESTADOR')")
     public ResponseEntity<Page<AuditLogResponseDTO>> buscarLogs(
             @RequestParam(required = false) String pesquisa,
             @RequestParam(required = false) String acao,
