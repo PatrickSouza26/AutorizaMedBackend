@@ -79,26 +79,30 @@ public class FuncionarioService {
             funcionario.setEndereco(EnderecoMapper.converteDto(request.endereco()));
         }
 
-        Funcionario atualizado = repository.save(funcionario);
-        return FuncionarioMapper.converteEntidade(atualizado);
+        Funcionario funcAtualizado = repository.save(funcionario);
+        return FuncionarioMapper.converteEntidade(funcAtualizado);
     }
 
     @Transactional
     @AuditUpdate(entidadeTipo = Funcionario.class, acao = AcaoAuditoria.INATIVACAO)
-    public void inativar(UUID id) {
+    public FuncionarioResponse inativar(UUID id) {
         Funcionario funcionario = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Funcionário não encontrado."));
         funcionario.setAtivo(false);
-        repository.save(funcionario);
+
+        Funcionario funcAtualizado = repository.save(funcionario);
+        return FuncionarioMapper.converteEntidade(funcAtualizado);
     }
 
     @Transactional
     @AuditUpdate(entidadeTipo = Funcionario.class, acao = AcaoAuditoria.REATIVACAO)
-    public void reativar(UUID id) {
+    public FuncionarioResponse reativar(UUID id) {
         Funcionario funcionario = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Funcionário não encontrado."));
         funcionario.setAtivo(true);
-        repository.save(funcionario);
+
+        Funcionario funcAtualizado = repository.save(funcionario);
+        return FuncionarioMapper.converteEntidade(funcAtualizado);
     }
 
     public List<FuncionarioResponse> listarPorPrestador(UUID prestadorId) {
