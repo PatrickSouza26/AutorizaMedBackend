@@ -157,6 +157,16 @@ public interface GuiaAutorizacaoRepository extends JpaRepository<GuiaAutorizacao
             Pageable pageable
     );
 
+    @Query("SELECT g FROM GuiaAutorizacao g " +
+           "WHERE g.auditor.id = :auditorId " +
+           "AND g.status = :status " +
+           "ORDER BY g.caraterSolicitacao DESC, g.dataLimiteAprovacao ASC")
+    Page<GuiaAutorizacao> buscarMinhasAnalisesOrdenadas(
+            @Param("auditorId") UUID auditorId,
+            @Param("status") StatusGuia status,
+            Pageable pageable
+    );
+
     //FREQUÊNCIA DE UTIILIZAÇÃO (PRESTADOR + BENEFICIÁRIO)
     @Query("""
         SELECT new com.autorizamed.api.relatorio.dto.TopEntidadeDTO(

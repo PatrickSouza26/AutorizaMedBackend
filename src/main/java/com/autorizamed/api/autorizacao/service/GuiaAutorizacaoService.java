@@ -29,11 +29,8 @@ import com.autorizamed.api.elegibilidade.repository.FuncionarioRepository;
 import com.autorizamed.api.elegibilidade.repository.PrestadorRepository;
 import com.autorizamed.api.elegibilidade.repository.ProcedimentoRepository;
 import com.autorizamed.api.elegibilidade.repository.RedeCredenciadaRepository;
-import com.autorizamed.api.notificacao.enums.TipoDestinatario;
-import com.autorizamed.api.notificacao.service.AvisoService;
 import com.autorizamed.api.seguranca.entity.Usuario;
 import com.autorizamed.api.seguranca.enums.RoleUsuario;
-import com.autorizamed.api.seguranca.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -66,7 +63,6 @@ public class GuiaAutorizacaoService {
     private final AnexoGuiaRepository anexoRepository;
     private final ProfissionalSaudeRepository profissionalSaudeRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final UsuarioRepository usuarioRepository;
 
     @Transactional
     @AuditCreate(entidadeTipo = GuiaAutorizacao.class, acao = AcaoAuditoria.GUIA_CRIADA)

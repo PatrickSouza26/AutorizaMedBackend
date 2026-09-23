@@ -75,6 +75,26 @@ public class AuditorController {
         return ResponseEntity.ok(fila);
     }
 
+    @GetMapping("/guias/minhas-analises")
+    @PreAuthorize("hasRole('AUDITOR')")
+    public ResponseEntity<Page<GuiaResponse>> listarMinhasAnalises(
+            @AuthenticationPrincipal Usuario usuarioLogado,
+            Pageable pageable
+    ) {
+        Page<GuiaResponse> fila = service.listarMinhasAnalises(usuarioLogado.getId(), pageable);
+        return ResponseEntity.ok(fila);
+    }
+
+    @PatchMapping("/guias/{id}/devolver-fila")
+    @PreAuthorize("hasRole('AUDITOR')")
+    public ResponseEntity<Void> devolverParaFila(
+            @PathVariable("id") UUID id,
+            @AuthenticationPrincipal Usuario usuarioLogado
+    ) {
+        service.devolverParaFila(id, usuarioLogado.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/guias/fila/kpis")
     @PreAuthorize("hasAnyRole('AUDITOR', 'ADMIN')")
     public ResponseEntity<FilaKpiResponse> buscarKpisFila() {
