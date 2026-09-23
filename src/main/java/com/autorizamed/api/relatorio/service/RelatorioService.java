@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -431,15 +432,23 @@ public class RelatorioService {
     private String calcularTempoMedioFormatado(List<SlaGuiaDTO> slaList) {
         if (slaList == null || slaList.isEmpty()) return "00h 00m";
 
-        long totalMinutos = 0;
+        long totalSegundos = 0;
         for (SlaGuiaDTO sla : slaList) {
-            java.time.Duration duracao = java.time.Duration.between(sla.dataInicioAnalise(), sla.dataFimAnalise());
-            totalMinutos += duracao.toMinutes();
+            if (sla.dataInicioAnalise() != null && sla.dataFimAnalise() != null) {
+                Duration duracao = Duration.between(sla.dataInicioAnalise(), sla.dataFimAnalise());
+                totalSegundos += duracao.getSeconds();
+            }
         }
 
-        long mediaMinutos = totalMinutos / slaList.size();
-        long horas = mediaMinutos / 60;
-        long minutosRestantes = mediaMinutos % 60;
+        if (totalSegundos == 0) return "00h 00m";
+
+        long mediaSegundos = totalSegundos / slaList.size();
+        long horas = mediaSegundos / 3600;
+        long minutosRestantes = (mediaSegundos % 3600) / 60;
+        
+        if (horas == 0 && minutosRestantes == 0) {
+            return "< 1m";
+        }
 
         return String.format("%02dh %02dm", horas, minutosRestantes);
     }
