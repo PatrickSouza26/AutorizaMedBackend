@@ -1,91 +1,168 @@
-# AutorizaMed API
-![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=java&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=Spring-Security&logoColor=white)
-![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
+# 🏥 AutorizaMed - Plataforma Inteligente de Regulação e Auditoria Médica
 
-AutorizaMed é um sistema completo e robusto para autorização de guias médicas, gerenciamento de elegibilidade, auditoria clínica e relatórios operacionais. Desenvolvido com as melhores práticas de mercado utilizando o ecossistema Spring Boot, a API oferece uma solução corporativa escalável para operadoras de saúde, prestadores (clínicas/hospitais) e auditores médicos.
+> Sistema corporativo de autorização de guias médicas com **Pipeline Autônomo de Inteligência Artificial Generativa**, arquitetura orientada a eventos, **RAG regulatório nativo com pgvector** e engenharia de resiliência empresarial.
 
-## 🚀 Principais Funcionalidades
+---
 
-### 🔐 Segurança e Controle de Acesso (RBAC)
-- Autenticação JWT (JSON Web Token) segura.
-- Perfis de acesso distintos: `ADMIN`, `AUDITOR`, `PRESTADOR`, `FUNCIONARIO_PRESTADOR`, `BENEFICIARIO`.
-- Filtros de segurança granulares protegendo rotas por roles.
+## 📌 1. Visão Geral do Projeto
 
-### 🏥 Gestão de Elegibilidade
-- Controle completo de Beneficiários, Prestadores, Funcionários e Rede Credenciada.
-- Validação de regras de negócio complexas, como carência, validade da carteirinha e tipo de plano (Premium, Intermediário, Básico).
+No ecossistema de Saúde Suplementar brasileiro, a regulação de procedimentos exige análise técnica e jurídica rigorosa contra as normas da **Agência Nacional de Saúde Suplementar (ANS)**. O processo tradicional de auditoria humana enfrenta gargalos operacionais críticos:
+* **Tempo de espera elevado** para procedimentos simples que poderiam ser autorizados imediatamente.
+* **Sobrecarga dos médicos auditores** com triagens manuais repetitivas.
+* **Risco de inconsistências e glosas** por divergências de cobertura contratual e regulatória.
 
-### 📋 Guias de Autorização Médica
-- Fluxo completo da guia: Solicitação -> Análise -> Pendência -> Auditoria -> Autorizada/Negada.
-- Anexos e laudos vinculados diretamente à guia.
-- Histórico imutável de todas as movimentações e mudanças de status.
-- Controle rigoroso de SLAs (Data limite de aprovação).
+O **AutorizaMed** moderniza essa esteira através de um **Agente Autônomo de Triagem Clínica** construído com **Spring Boot 4**, **LangChain4j**, **Google Gemini** e **pgvector**, implementando o modelo *Human-in-the-Loop* (humano no circuito) com foco em confiabilidade, auditoria e velocidade.
 
-### 📊 Relatórios e Dashboards
-- Dashboards customizados por perfil (Admin vs Prestador).
-- KPIs de SLA, produtividade de auditores, frequências de utilização (Top Procedimentos, Prestadores, Beneficiários).
-- Acompanhamento da linha do tempo evolutiva das Guias.
+---
 
-### 👁️ Auditoria Transparente (AOP)
-- Sistema avançado de rastreabilidade usando Aspect-Oriented Programming (AOP).
-- Registro automático de ações (`CREATE`, `UPDATE`, `INACTIVATE`, `LOGIN`) no sistema, garantindo compliance e segurança da informação sem poluir as regras de negócio.
+## 🏗️ 2. Arquitetura da Solução de IA
 
-## 💻 Tecnologias Utilizadas
+O sistema adota uma **Arquitetura Orientada a Eventos (EDA)** e **Totalmente Desacoplada**, garantindo que a requisição de cadastro da guia retorne em milissegundos para o usuário enquanto o processamento cognitivo ocorre em segundo plano.
 
-- **Linguagem:** Java 17
-- **Framework:** Spring Boot 3
-- **Persistência:** Spring Data JPA / Hibernate
-- **Banco de Dados:** PostgreSQL
-- **Segurança:** Spring Security + Auth0 Java JWT
-- **Boilerplate Reduction:** Lombok
-- **Arquitetura:** Camadas (Controllers, Services, Repositories, Entities, DTOs, Mappers, Events, Aspects)
+```mermaid
+flowchart TD
+    subgraph FRONTEND["Frontend (Next.js)"]
+        SOL["Solicitação de Guia (Prestador)"]
+        PAINEL["Painel do Auditor (Copiloto)"]
+    end
 
-## 🏗️ Arquitetura e Destaques Técnicos (Deep Dive)
+    subgraph CORE["Núcleo da Aplicação (Spring Boot)"]
+        SVC["GuiaAutorizacaoService"]
+        EVENT["GuiaEmAnaliseEvent"]
+        LISTENER["AuditoriaIaListener (@Async)"]
+    end
 
-O projeto vai muito além de um CRUD tradicional, apresentando soluções arquiteturais para problemas reais do dia a dia de sistemas de alta volumetria e complexidade no setor de saúde:
+    subgraph RESILIENCIA["Camada de Resiliência (Resilience4j)"]
+        RETRY["@Retry (Backoff Exponencial)"]
+        CB["@CircuitBreaker (Disjuntor)"]
+        FALLBACK["Fallback de Emergência"]
+    end
 
-- **Otimização de Memória no Hibernate (JPA Lazy Loading):** Para evitar problemas de `OutOfMemoryError` comuns em sistemas médicos, os arquivos binários pesados dos anexos (laudos/imagens) foram extraídos para uma entidade separada (`AnexoConteudo`) e mapeados via `@OneToOne(fetch = FetchType.LAZY)`. Isso garante que listar guias não sobrecarregue o banco ou a JVM.
-- **Consultas Analíticas de Alta Performance (JPA Projections):** No módulo de relatórios (`GuiaAutorizacaoRepository`), o sistema evita buscar a entidade inteira do banco (`SELECT *`), utilizando *Constructor Expressions* (`new com.autorizamed.api.relatorio.dto...`) direto na Query JPQL. Isso economiza drasticamente o uso de CPU e Memória para a geração de Dashboards.
-- **Motor de Regras de Negócio Avançado:** O `GuiaAutorizacaoService` possui validações de contratos complexas, cruzando `RedeCredenciada` (o prestador atende aquele `Procedimento`?) com o `TipoPlano` do beneficiário (Básico, Intermediário, Premium).
-- **Controle de Frequência Antifraude:** O sistema implementa uma checagem de frequência (`contarProcedimentoRecente`), barrando ou enviando para auditoria pacientes que solicitam exames idênticos dentro de um intervalo de 30 dias.
-- **Separação de Entidades e Contratos:** Isolamento estrito usando Records e DTOs, blindando o backend contra vazamento de atributos internos e ataques de *Mass Assignment*.
-- **Confiabilidade com Transactional Event Listeners:** O uso de `ApplicationEventPublisher` aliado a `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` garante que disparos de notificações (Avisos) só ocorram se a transação do banco for concluída com sucesso, evitando falsos positivos e "side effects" perigosos em caso de Rollbacks.
+    subgraph RAG_LAYER["RAG Regulatório (LangChain4j + pgvector)"]
+        EMB_MODEL["gemini-embedding-001 (768d)"]
+        PGV[("PostgreSQL 18 + pgvector\n(tb_diretriz_ans)")]
+        PROMPT["Grounding / Ancoragem"]
+    end
 
-## 🚦 Como Executar
+    subgraph LLM["Modelo de Decisão"]
+        GEMINI["Google Gemini 2.5 Flash"]
+    end
+
+    SOL -->|POST /guias| SVC
+    SVC -->|commit no banco| EVENT
+    EVENT -->|TransactionPhase.AFTER_COMMIT| LISTENER
+    LISTENER --> RETRY
+    RETRY --> CB
+    CB -->|1. Busca Semântica| EMB_MODEL
+    EMB_MODEL -->|2. Cosine Similarity| PGV
+    PGV -->|3. Diretrizes DUT ANS| PROMPT
+    PROMPT -->|4. Análise Clínica| GEMINI
+    
+    GEMINI -->|Aprovado (Fast-Track)| SVC
+    GEMINI -->|Divergente| PAINEL
+    CB -.->|Falha/Timeout| FALLBACK
+    FALLBACK -.->|Triagem Manual Segura| PAINEL
+```
+
+---
+
+## 💎 3. Diferenciais de Engenharia de Software
+
+### 🧠 A. RAG Regulatório Nativo com `pgvector`
+* **Zero Overhead de SaaS Externo:** O banco vetorial é mantido na mesma instância do PostgreSQL através da extensão nativa `vector(768)`, aproveitando a infraestrutura relacional, segurança ACID e backups unificados.
+* **Busca Semântica por Similaridade de Cosseno:** Utiliza o modelo `gemini-embedding-001` para mapear sintomas e procedimentos em um espaço vetorial de 768 dimensões, recuperando com precisão as **Diretrizes de Utilização (DUTs)** da ANS pertinentes ao caso.
+* **Ancoragem Estrita (*Grounding*):** Elimina alucinações ao forçar a IA a justificar pareceres médicos fundamentando-se explicitamente nas normas regulatórias recuperadas do banco.
+
+### 🛡️ B. Engenharia de Resiliência Corporativa (`Resilience4j`)
+* **Retry com Backoff Exponencial:** Intercepta falhas transitórias de rede ou *rate limits* com retentativas espaçadas (2s, 4s, 8s).
+* **Circuit Breaker (Disjuntor de Proteção):** Monitora a taxa de falhas da API externa. Se a taxa de erro ultrapassar 50% em uma janela deslizante, o circuito abre temporariamente (30s), impedindo sobrecarga no servidor e consumo desnecessário de CPU.
+* **Fallback Degradado Gracioso:** Em caso de indisponibilidade severa da IA, a guia não é travada: o sistema anexa um alerta de contingência e a encaminha silenciosamente para a esteira humana.
+
+### ⚡ C. Execução Assíncrona e Consistência Transacional
+* **`@TransactionalEventListener(phase = AFTER_COMMIT)`:** Assegura que o evento de auditoria inteligente só seja disparado após a guia estar 100% persistida no banco relacional, eliminando condições de corrida (*race conditions*).
+* **Processamento `@Async` Não-Bloqueante:** O prestador recebe a confirmação de protocolo em milissegundos; a IA trabalha de forma assíncrona em uma thread dedicada.
+
+### 🩺 D. Copiloto Clínico no Frontend (*Human-in-the-Loop*)
+* A interface do auditor exibe um card com destaque visual apresentando o parecer gerado pela IA.
+* **Ação Rápida em 1 Clique:** O auditor pode revisar e importar o parecer técnico diretamente para a justificativa oficial da negativa ou pendência, acelerando o tempo de ciclo operacional.
+
+---
+
+## 🛠️ 4. Stack Tecnológica
+
+| Camada | Tecnologias |
+| :--- | :--- |
+| **Backend** | Java 17, Spring Boot 4.1.0, Spring Data JPA, Spring Security (JWT), HikariCP |
+| **Inteligência Artificial** | LangChain4j 0.35.0, Google Gemini 2.5 Flash, `gemini-embedding-001` |
+| **Banco de Dados** | PostgreSQL 18.3, Extensão `pgvector` (0.8.6) |
+| **Tolerância a Falhas** | Resilience4j 2.4.0 (Circuit Breaker, Retry, Fallback) |
+| **Frontend** | Next.js 14, React, TypeScript, CSS Modules, Lucide Icons |
+| **Testes** | JUnit 5, AssertJ, Spring Boot Test |
+
+---
+
+## 🚀 5. Como Executar o Projeto Localmente
 
 ### Pré-requisitos
-- Java 17+
-- Maven
-- PostgreSQL rodando na porta 5432 (ou altere no `application.properties`)
+* **Java 17+** e **Maven 3.8+**
+* **PostgreSQL 18** com a extensão `pgvector` instalada
+* **Node.js 18+** e **npm**
+* Chave de API gratuita do [Google AI Studio](https://aistudio.google.com/)
 
-### Passos
-1. Clone o repositório.
-2. Crie um banco de dados chamado `autorizamed` no PostgreSQL.
-3. Configure as credenciais no arquivo `src/main/resources/application.properties`:
-   ```properties
-   spring.datasource.username=postgres
-   spring.datasource.password=sua_senha
-   ```
-4. Execute o comando:
-   ```bash
-   ./mvnw spring-boot:run
-   ```
-5. A API estará disponível em `http://localhost:8080`.
+---
 
-**Nota de Teste:** O sistema possui um `DataInitializer` que povoará o banco de dados com administradores, prestadores, beneficiários e dezenas de guias em diferentes status para testes imediatos. Um arquivo `schema.sql` também está disponível na raiz caso deseje popular via script direto.
+### Passo 1: Configurar a Base de Dados
+No seu terminal PostgreSQL ou cliente SQL (DBeaver/pgAdmin):
+```sql
+CREATE DATABASE autorizamed;
+\c autorizamed;
+CREATE EXTENSION IF NOT EXISTS vector;
+```
 
-## 🗺️ Roadmap e Evolução Futura (AI Integration)
+---
 
-O projeto está em evolução contínua, com foco atual na transição para um sistema inteligente. As próximas atualizações arquiteturais incluem:
+### Passo 2: Configurar o Backend
+No arquivo `api/src/main/resources/application.properties`, configure as credenciais do banco e sua chave do Google Gemini:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/autorizamed
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
 
-- [ ] **Auditoria Automatizada por IA:** Integração com modelos LLM via **LangChain4j** para pré-análise de guias, extraindo justificativas clínicas estruturadas e sugerindo aprovação ou negação[cite: 1].
-- [ ] **Copilot do Auditor (UX Fluida):** Implementação de **Server-Sent Events (SSE)** no backend para realizar o streaming da análise da IA em tempo real para o frontend em Next.js[cite: 1].
-- [ ] **Resiliência de Integração:** Blindagem da comunicação com provedores de IA utilizando **Resilience4j** (Circuit Breakers e Exponential Backoff) para garantir alta disponibilidade do sistema central[cite: 1].
-- [ ] **Observabilidade de Custos:** Criação de um sistema de *Token Tracking* via logs para auditar o consumo e o custo de cada análise gerada[cite: 1].
+langchain4j.google-ai-gemini.chat-model.api-key=SUA_CHAVE_GEMINI_AQUI
+langchain4j.google-ai-gemini.chat-model.model-name=gemini-2.5-flash
+langchain4j.google-ai-gemini.chat-model.temperature=0.0
+```
 
-## 📄 Licença
+Compile e execute o backend:
+```bash
+cd api
+mvn clean spring-boot:run
+```
 
-Este projeto é destinado a fins de portfólio. Todos os direitos reservados.
+> [!NOTE]
+> **Carga Automática (*Zero-Setup*):** Na primeira inicialização, o componente `DiretrizAnsSeeder` identifica que a base vetorial está vazia e ingere automaticamente as Diretrizes Clínicas da ANS (DUT 42, DUT 01, DUT 108, DUT 65) no `pgvector`.
+
+---
+
+### Passo 3: Executar o Frontend
+```bash
+cd front
+npm install
+npm run dev
+```
+Acesse a aplicação no navegador em: `http://localhost:3000`.
+
+---
+
+## 🧪 6. Testes Automatizados
+
+O projeto conta com suite de testes de integração cobrindo o ciclo completo do RAG, a resiliência e a persistência no banco:
+
+```bash
+cd api
+mvn test -Dtest=AuditoriaIaServiceTest
+```
+
+**Cenários cobertos:**
+1. **Recuperação e Decisão Semântica:** Validação de pertinência clínica cruzando procedimentos contra a base vetorial da ANS.
+2. **Disparo do Circuit Breaker:** Teste de retentativas automáticas e ativação do modo de contingência em caso de indisponibilidade da IA.
