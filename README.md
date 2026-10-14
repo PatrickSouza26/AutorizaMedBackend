@@ -48,20 +48,20 @@ flowchart TD
         GEMINI["Google Gemini 2.5 Flash"]
     end
 
-    SOL -->|POST /guias| SVC
-    SVC -->|commit no banco| EVENT
-    EVENT -->|TransactionPhase.AFTER_COMMIT| LISTENER
-    LISTENER --> RETRY
-    RETRY --> CB
-    CB -->|1. Busca Semântica| EMB_MODEL
-    EMB_MODEL -->|2. Cosine Similarity| PGV
-    PGV -->|3. Diretrizes DUT ANS| PROMPT
-    PROMPT -->|4. Análise Clínica| GEMINI
-    
-    GEMINI -->|Aprovado (Fast-Track)| SVC
-    GEMINI -->|Divergente| PAINEL
-    CB -.->|Falha/Timeout| FALLBACK
-    FALLBACK -.->|Triagem Manual Segura| PAINEL
+    SOL -->|"POST /guias"| SVC
+      SVC -->|"Commit no banco"| EVENT
+      EVENT -->|"AFTER_COMMIT"| LISTENER
+      LISTENER --> RETRY
+      RETRY --> CB
+      CB -->|"1. Busca Semântica"| EMB_MODEL
+      EMB_MODEL -->|"2. Cosine Similarity"| PGV
+      PGV -->|"3. Diretrizes DUT ANS"| PROMPT
+      PROMPT -->|"4. Análise Clínica"| GEMINI
+      
+      GEMINI -->|"Aprovado (Fast-Track)"| SVC
+      GEMINI -->|"Divergente"| PAINEL
+      CB -.->|"Falha / Timeout"| FALLBACK
+      FALLBACK -.->|"Triagem Manual Segura"| PAINEL
 ```
 
 ---
