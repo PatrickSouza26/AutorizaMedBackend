@@ -61,6 +61,7 @@ public class GuiaMapper {
                 procedimentos,
                 entidade.getStatus(),
                 entidade.getMotivoNegativa(),
+                entidade.getAlertaSistema(),
                 entidade.getIndicacaoClinica(),
                 entidade.getDataSolicitacao(),
                 entidade.getCaraterSolicitacao(),

@@ -13,6 +13,7 @@ import com.autorizamed.api.autorizacao.entity.ProcedimentoGuia;
 import com.autorizamed.api.autorizacao.entity.ProfissionalSaude;
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
 import com.autorizamed.api.autorizacao.enums.StatusGuia;
+import com.autorizamed.api.autorizacao.event.GuiaEmAnaliseEvent;
 import com.autorizamed.api.autorizacao.event.PendenciaRespondidaEvent;
 import com.autorizamed.api.autorizacao.mapper.CboMapper;
 import com.autorizamed.api.autorizacao.mapper.GuiaMapper;
@@ -168,7 +169,13 @@ public class GuiaAutorizacaoService {
             guia.adicionarProcedimento(itemGuia);
         }
 
-        return GuiaMapper.converteEntidade(guiaRepository.save(guia));
+        GuiaAutorizacao guiaSalva = guiaRepository.save(guia);
+
+        if (guiaSalva.getStatus() == StatusGuia.EM_ANALISE) {
+            eventPublisher.publishEvent(new GuiaEmAnaliseEvent(guiaSalva.getId()));
+        }
+
+        return GuiaMapper.converteEntidade(guiaSalva);
     }
     private record ResultadoValidacao(StatusGuia statusFinal, String motivoNegativa, String alertaSistema) {}
 
@@ -178,8 +185,8 @@ public class GuiaAutorizacaoService {
         if (procedimentos.isEmpty() || procedimentos.size() != totalCodigosEnviados) return new ResultadoValidacao(StatusGuia.NEGADA, "Um ou mais códigos TUSS informados são inválidos.", null);
 
         boolean precisaDeAuditoria = false;
-        String alerta = null;
         LocalDateTime dataCorteFrequencia = LocalDateTime.now().minusDays(30);
+        List<String> alertas = new ArrayList<>();
 
         for (Procedimento proc : procedimentos) {
             if (!proc.isAtivo()) {
@@ -208,11 +215,11 @@ public class GuiaAutorizacaoService {
                 long repeticoes = guiaRepository.contarProcedimentoRecente(paciente.getId(), proc.getId(), dataCorteFrequencia);
                 if (repeticoes > 0) {
                     precisaDeAuditoria = true;
-                    alerta = "Paciente já realizou o exame " + proc.getCodigoTuss() + " nos últimos 30 dias.";
-                }
+                    alertas.add("Frequência excedida para o TUSS " + proc.getCodigoTuss() + " (já realizado nos últimos 30 dias).");                }
             }
         }
 
+        String alerta = alertas.isEmpty() ? null : String.join(" | ", alertas);
         StatusGuia status = precisaDeAuditoria ? StatusGuia.EM_ANALISE : StatusGuia.AUTORIZADA;
         return new ResultadoValidacao(status, null, alerta);
     }

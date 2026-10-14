@@ -24,6 +24,7 @@ public record GuiaResponse(
         List<String> examesSolicitados,
         StatusGuia statusAtual,
         String motivoNegativa,
+        String alertaSistema,
         String indicacaoClinica,
         LocalDateTime dataSolicitacao,
         CaraterSolicitacao caraterSolicitacao,
