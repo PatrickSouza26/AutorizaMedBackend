@@ -7,6 +7,7 @@ import com.autorizamed.api.autorizacao.dto.response.FilaKpiResponse;
 import com.autorizamed.api.autorizacao.dto.response.GuiaResponse;
 import com.autorizamed.api.autorizacao.enums.CaraterSolicitacao;
 import com.autorizamed.api.autorizacao.service.AuditorService;
+import com.autorizamed.api.ia.dto.ResultadoAuditoriaIA;
 import com.autorizamed.api.seguranca.entity.Usuario;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -146,5 +147,14 @@ public class AuditorController {
         UUID idAuditor = usuarioLogado.getId();
         GuiaResponse response = service.solicitarPendencia(id, idAuditor, request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/guias/{id}/copilot")
+    @PreAuthorize("hasRole('AUDITOR')")
+    public ResponseEntity<ResultadoAuditoriaIA> pedirAjudaIA(
+            @PathVariable UUID id
+    ) {
+        var resultado = service.testarCopilotIA(id);
+        return ResponseEntity.ok(resultado);
     }
 }

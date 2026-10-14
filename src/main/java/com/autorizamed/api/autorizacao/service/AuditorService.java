@@ -20,6 +20,8 @@ import com.autorizamed.api.autorizacao.repository.AuditorRepository;
 import com.autorizamed.api.autorizacao.repository.GuiaAutorizacaoRepository;
 import com.autorizamed.api.comum.mapper.EnderecoMapper;
 import com.autorizamed.api.comum.model.Endereco;
+import com.autorizamed.api.ia.dto.ResultadoAuditoriaIA;
+import com.autorizamed.api.ia.service.AssistenteAuditoria;
 import com.autorizamed.api.seguranca.enums.RoleUsuario;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class AuditorService {
     private final AuditorRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final AssistenteAuditoria assistenteAuditoria;
 
     @Transactional
     @AuditCreate(entidadeTipo = Auditor.class)
@@ -283,6 +286,29 @@ public class AuditorService {
         ));
 
         return GuiaMapper.converteEntidade(guiaSalva);
+    }
+
+    @Transactional(readOnly = true)
+    public ResultadoAuditoriaIA testarCopilotIA(UUID guiaId) {
+        GuiaAutorizacao guia = guiaRepository.findById(guiaId)
+                .orElseThrow(() -> new EntityNotFoundException("Guia não encontrada."));
+
+        String nomePaciente = guia.getBeneficiario().getNome();
+
+        String procedimentosStr = guia.getProcedimentos().stream()
+                .map(p -> p.getQuantidade() + "x " + p.getProcedimento().getDescricao()) // ou getNome() dependendo da sua entidade Procedimento
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("Nenhum procedimento informado");
+        String indicacaoClinica = guia.getIndicacaoClinica() != null ?
+                guia.getIndicacaoClinica() : "Não informada";
+         
+        System.out.println("Enviando dados da guia " + guia.getNumeroGuia() + " para o Google Gemini...");
+
+        return assistenteAuditoria.auditarGuia(
+                nomePaciente,
+                procedimentosStr,
+                indicacaoClinica
+        );
     }
 
     private void validarStatus(GuiaAutorizacao guia) {
