@@ -76,9 +76,9 @@ public class GuiaAutorizacaoService {
                 .orElseThrow(() -> new EntityNotFoundException("Erro crítico: Prestador não existe na base de dados."));
 
         Funcionario funcionario = null;
-        if (request.funcionarioId() != null) {
+        if (request.funcionarioId() != null && !request.funcionarioId().equals(prestador.getId())) {
             funcionario = funcionarioRepository.findById(request.funcionarioId())
-                    .orElseThrow(() -> new EntityNotFoundException("Erro crítico: Funcionário não existe na base de dados."));
+                    .orElse(null);
         }
 
         ProfissionalSaude solicitante = profissionalSaudeRepository.findByNumeroConselho(request.profissionalSolicitante().numeroConselho())
@@ -146,13 +146,12 @@ public class GuiaAutorizacaoService {
                 .tipoSolicitacao(request.tipoSolicitacao())
                 .build();
 
-        if (funcionario != null) {
-            String parecerCriacao = validacao.statusFinal() == StatusGuia.AUTORIZADA
-                    ? "Guia autorizada."
-                    : "Guia gerada e enviada para análise da auditoria.";
+        Usuario usuarioCriador = (funcionario != null) ? funcionario : prestador;
+        String parecerCriacao = validacao.statusFinal() == StatusGuia.AUTORIZADA
+                ? "Guia autorizada."
+                : "Guia gerada e enviada para análise da auditoria.";
 
-            guia.registrarHistorico(funcionario, validacao.statusFinal(), parecerCriacao, validacao.motivoNegativa());
-        }
+        guia.registrarHistorico(usuarioCriador, validacao.statusFinal(), parecerCriacao, validacao.motivoNegativa());
 
         for (SolicitarGuiaRequest.ItemProcedimentoRequest itemReq : request.procedimentos()) {
 
