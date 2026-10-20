@@ -43,7 +43,7 @@ public class HistoricoGuia {
     @Column(columnDefinition = "TEXT")
     private String parecer;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String motivoNegativa;
 
     @PrePersist

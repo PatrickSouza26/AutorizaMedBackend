@@ -75,7 +75,7 @@ public class AuditoriaIaService {
     }
 
     public void fallbackAuditoria(UUID guiaId, Exception e) {
-        log.error("Falha ao comunicar com a IA para a guia ID {}. Erro: {}. Encaminhando para auditoria humana.", guiaId, e.getMessage());
+        log.error("Falha ao comunicar com a IA para a guia ID {}. Erro: {}. Encaminhando para auditoria humana.", guiaId, e.getMessage(), e);
 
         GuiaAutorizacao guia = guiaRepository.findById(guiaId).orElse(null);
 

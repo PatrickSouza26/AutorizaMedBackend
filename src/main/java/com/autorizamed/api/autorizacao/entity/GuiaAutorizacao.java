@@ -95,13 +95,13 @@ public class GuiaAutorizacao {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataSolicitacao;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String motivoNegativa;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String alertaSistema;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String parecerAuditoria;
 
     @PrePersist
