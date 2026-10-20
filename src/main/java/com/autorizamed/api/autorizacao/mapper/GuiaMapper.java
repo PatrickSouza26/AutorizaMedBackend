@@ -28,7 +28,8 @@ public class GuiaMapper {
                 .collect(Collectors.toList()) : List.of();
 
         String nomeFuncionario = entidade.getFuncionario() != null
-                ? entidade.getFuncionario().getNome() : null;
+                ? entidade.getFuncionario().getNome()
+                : (entidade.getPrestador() != null ? entidade.getPrestador().getNome() : null);
 
         String nomeSolicitante = entidade.getProfissionalSolicitante() != null
                 ? entidade.getProfissionalSolicitante().getNome() : null;
