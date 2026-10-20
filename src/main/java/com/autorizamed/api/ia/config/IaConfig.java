@@ -11,11 +11,17 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
+import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import retrofit2.Retrofit;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.time.Duration;
 
 @Configuration
 public class IaConfig {
@@ -27,12 +33,37 @@ public class IaConfig {
     private Double temperature;
     @Bean
     public ChatLanguageModel geminiChatModel() {
-        return GoogleAiGeminiChatModel.builder()
+        GoogleAiGeminiChatModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(modelName)
                 .temperature(temperature)
+                .timeout(Duration.ofSeconds(60))
                 .logRequestsAndResponses(true)
                 .build();
+
+        try {
+            Field serviceField = GoogleAiGeminiChatModel.class.getDeclaredField("geminiService");
+            serviceField.setAccessible(true);
+            Object proxy = serviceField.get(model);
+            InvocationHandler handler = Proxy.getInvocationHandler(proxy);
+            Field retrofitField = handler.getClass().getDeclaredField("this$0");
+            retrofitField.setAccessible(true);
+            Retrofit retrofit = (Retrofit) retrofitField.get(handler);
+            Field callFactoryField = Retrofit.class.getDeclaredField("callFactory");
+            callFactoryField.setAccessible(true);
+            OkHttpClient oldClient = (OkHttpClient) callFactoryField.get(retrofit);
+            OkHttpClient hardenedClient = oldClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(60))
+                    .readTimeout(Duration.ofSeconds(60))
+                    .writeTimeout(Duration.ofSeconds(60))
+                    .callTimeout(Duration.ofSeconds(60))
+                    .build();
+            callFactoryField.set(retrofit, hardenedClient);
+        } catch (Exception e) {
+
+        }
+        return model;
+
     }
 
     @Bean
@@ -41,6 +72,7 @@ public class IaConfig {
                 .apiKey(apiKey)
                 .modelName("gemini-embedding-001")
                 .outputDimensionality(768)
+                .timeout(Duration.ofSeconds(60))
                 .build();
     }
 
